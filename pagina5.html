@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rejeitar Motivo</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 50px;
+        }
+
+        .label {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .input-field {
+            margin-bottom: 20px;
+            padding: 10px;
+            width: 100%;
+            max-width: 300px; /* Limita a largura máxima do campo de entrada */
+            font-size: 16px;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+        }
+
+            .buttons button {
+                margin: 0 10px;
+                padding: 10px 20px;
+                font-size: 16px;
+                cursor: pointer;
+                width: 150px; /* Define a largura fixa para ambos os botões */
+                text-align: center; /* Garante que o texto fique centralizado */
+            }
+
+        .approve-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+        }
+
+        .reject-btn {
+            background-color: #f44336;
+            color: white;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <input type="text" id="motivo" class="input-field" placeholder="Digite o motivo da rejeição" name="motivo" required>
+        <div class="buttons">
+            <button id="rejectBtn" class="reject-btn">Rejeitar</button>
+            <button id="approveBtn" class="approve-btn">Confirmar</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const params = new URLSearchParams(window.location.search);
+            const coupahost = params.get('coupahost');
+            const objectId = params.get('object_id');
+            const objectType = params.get('object_type');
+            const userId = params.get('user_id');
+
+            document.getElementById('rejectBtn').addEventListener('click', async function () {
+                const motivoInput = document.getElementById('motivo');
+                const motivo = motivoInput.value.trim();
+
+                if (!motivo) {
+                    alert('Por favor, preencha o campo de motivo.');
+                    return;
+                }
+                axios.post("https://vale-dev.coupahost.com/oauth2/token?client_id=46329219e1ef6987aaab6db4da29f8d3&grant_type=client_credentials&scope=core.purchase_order.write&client_secret=44694ec247730b1bd7decf642e50bfe3ac2f618cf4018c4d2a4d618d1f514b7c", null, {
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    }
+                })
+                    .then(function (response) {
+                        const accessToken = response.data.access_token;
+                        return axios.put("https://vale-dev.coupahost.com/api/purchase_orders/49?return_object=limited", null, {
+                            headers: {
+                                "Authorization": `Bearer ${accessToken}`,
+                                "Accept": "application/json"
+                            },
+                            body: JSON.stringify({ "custom-fields": { "motivo": motivo } })
+                        })
+                    })
+                    .then(function (response) {
+                        document.getElementById("loading").style.display = "none";
+                        document.getElementById("updateMessage").style.display = "block";
+                    })
+                    .catch(function (error) {
+                        document.getElementById("loading").style.display = "none";
+                        if (error.response && error.response.status !== 200) {
+                            document.getElementById("response").innerHTML = "Não foi possível rejeitar o pedido de compra, envio um comentário no chat para o comprador.";
+                        } else {
+                            console.error(error);
+                        }
+                    });
+            });
+
+            document.getElementById('approveBtn').addEventListener('click', async function () {
+                document.getElementById('motivo').value = '';
+                axios.post("https://vale-dev.coupahost.com/oauth2/token?client_id=46329219e1ef6987aaab6db4da29f8d3&grant_type=client_credentials&scope=core.purchase_order.write&client_secret=44694ec247730b1bd7decf642e50bfe3ac2f618cf4018c4d2a4d618d1f514b7c", null, {
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    }
+                })
+                    .then(function (response) {
+                        const accessToken = response.data.access_token;
+                        return axios.put("https://vale-dev.coupahost.com/api/purchase_orders/$49?return_object=limited", null, {
+                            headers: {
+                                "Authorization": `Bearer ${accessToken}`,
+                                "Accept": "application/json"
+                            },
+                            body: JSON.stringify({ "custom-fields": { "motivo": "" } })
+                        })
+                    })
+                    .then(function (response) {
+                        document.getElementById("loading").style.display = "none";
+                        document.getElementById("updateMessage").style.display = "block";
+                    })
+                    .catch(function (error) {
+                        document.getElementById("loading").style.display = "none";
+                        if (error.response && error.response.status !== 200) {
+                            document.getElementById("response").innerHTML = "Não foi possível confirmar o pedido de compra, envio um comentário no chat para o comprador.";
+                        } else {
+                            console.error(error);
+                        }
+                    });
+            });
+
+
+        });
+    </script>
+</body>
+</html>
